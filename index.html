@@ -120,8 +120,8 @@
     <table class="eta-table">
         <thead>
             <tr>
-                <th class="col-dir">往</th>
                 <th class="col-route">路線</th>
+                <th class="col-dir">往</th>
                 <th class="col-stop">車站</th>
                 <th class="col-eta">分鐘</th>
             </tr>
@@ -291,8 +291,8 @@
 
                 htmlBuffer += `
                     <tr>
-                        <td class="col-dir">${res.item.direction}</td>
                         <td class="col-route"><span class="route-badge">${res.item.route}</span></td>
+                        <td class="col-dir">${res.item.direction}</td>
                         <td class="col-stop">${res.item.stopName}</td>
                         <td class="col-eta">
                             <div class="eta-container">${badgesHTML}</div>
