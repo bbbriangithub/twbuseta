@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>荃景圍及周邊交通 ETA 2.0</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        kmb: '#dc2626',
+                        mtr: '#005a9c',
+                        gmb: '#16a34a',
+                        darkBg: '#0f172a',
+                        cardBg: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+TC:wght@400;600;700;900&display=swap');
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Pulse animation for arriving buses */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        .eta-arriving {
+            animation: pulse-ring 1.5s infinite ease-in-out;
+            box-shadow: 0 0 12px rgba(220, 38, 38, 0.6);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 4px;
+        }
+
+        /* Table sticky header */
+        .sticky-header th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #111827;
+        }
+
+        /* Responsive font scaling utility */
+        .font-scale-sm { font-size: 0.875rem; }
+        .font-scale-md { font-size: 1.125rem; }
+        .font-scale-lg { font-size: 1.5rem; }
+        .font-scale-xl { font-size: 2.25rem; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-950 text-slate-100 p-2 md:p-4 font-scale-md" id="bodyRoot">
+
+    <header class="bg-slate-900 border border-slate-800 rounded-2xl p-3 md:p-4 mb-3 shadow-lg flex flex-col md:flex-row justify-between items-center gap-3">
+        <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+            <div class="flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 inline-block animate-ping" id="statusDot"></span>
+                <h1 class="text-xl md:text-2xl font-black tracking-wide text-white flex items-center gap-2">
+                    <i class="fa-solid font-bold fa-bus text-amber-400"></i>
+                    <span>荃景圍交通 ETA</span>
+                    <span class="text-xs px-2 py-0.5 rounded bg-blue-600 text-white font-mono font-normal">v2.0</span>
+                </h1>
+            </div>
+            
+            <div class="md:hidden text-xs text-slate-400 font-mono" id="mobileClock">
+                --:--:--
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+            <!-- Clock display -->
+            <div class="hidden md:flex flex-col text-right">
+                <div class="text-lg font-bold font-mono text-emerald-400" id="desktopClock">--:--:--</div>
+                <div class="text-xs text-slate-400 font-mono" id="desktopDate">-- --- ----</div>
+            </div>
+
+            <!-- Auto refresh indicator -->
+            <div class="flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-mono">
+                <i class="fa-solid fa-arrows-rotate text-blue-400" id="refreshIcon"></i>
+                <span id="countdownText" class="text-slate-300">10s</span>
+            </div>
+
+            <!-- Control buttons -->
+            <div class="flex items-center gap-1.5 bg-slate-800/80 p-1 rounded-xl border border-slate-700">
+                <button id="btnSound" title="聲音提示" onclick="toggleAudio()" class="p-2 text-slate-400 hover:text-white rounded-lg transition-colors">
+                    <i class="fa-solid fa-volume-xmark" id="soundIcon"></i>
+                </button>
+                <button id="btnViewMode" title="切換檢視模式" onclick="toggleViewMode()" class="p-2 text-slate-400 hover:text-white rounded-lg transition-colors">
+                    <i class="fa-solid fa-table-cells-large"></i>
+                </button>
+                <button id="btnFontScale" title="縮放字體" onclick="cycleFontSize()" class="p-2 text-slate-400 hover:text-white rounded-lg transition-colors font-bold text-xs">
+                    <i class="fa-solid fa-text-height"></i>
+                </button>
+                <button id="btnManualRefresh" title="手動更新" onclick="fetchAndRenderAll(true)" class="p-2 text-slate-400 hover:text-amber-400 rounded-lg transition-colors">
+                    <i class="fa-solid fa-rotate"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col min-h-0 mt-2">
+        <!-- List View Container (Default) -->
+        <div id="listViewContainer" class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl flex-1 flex flex-col">
+            <div class="overflow-x-auto flex-1">
+                <table class="w-full text-left border-collapse sticky-header">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-slate-400 text-xs md:text-sm font-semibold tracking-wider">
+                            <th class="py-3 px-3 w-10 text-center"><i class="fa-regular fa-star"></i></th>
+                            <th class="py-3 px-3 w-24">路線</th>
+                            <th class="py-3 px-3 w-32 md:w-44">目的地</th>
+                            <th class="py-3 px-3 w-36 md:w-56">候車站</th>
+                            <th class="py-3 px-3">預計到達時間 (分鐘)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="etaTableBody" class="divide-y divide-slate-800/60 font-medium">
+                        <!-- Dynamic rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Card Grid View Container -->
+        <div id="gridViewContainer" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 overflow-y-auto flex-1 pr-1">
+            <!-- Dynamic grid cards -->
+        </div>
+
+        <!-- Empty state message -->
+        <div id="emptyState" class="hidden flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-500">
+            <i class="fa-solid fa-bus-simple text-4xl mb-2 text-slate-700"></i>
+            <p>沒有符合條件的路線班次</p>
+        </div>
+    </main>
+
+    <footer class="mt-3 bg-slate-900 border border-slate-800 rounded-2xl px-4 py-2 text-xs text-slate-500 flex items-center justify-center">
+        <div class="flex items-center gap-3 flex-wrap justify-center">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-red-600 inline-block"></span> 即將到達 (&lt;9分)</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-orange-500 inline-block"></span> 9-15 分鐘</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block"></span> &gt;15 分鐘</span>
+        </div>
+    </footer>
+
+    <script>
+        // Instructions dataset with route configurations
+        const defaultInstructions = [
+            { id: "1", busCoId: "KMB", route: "234A", direction: "荃灣站", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/9E970734315233A2/234A/1" },
+            { id: "2", busCoId: "KMB", route: "234B", direction: "荃灣站", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/9E970734315233A2/234B/1" },
+            { id: "3", busCoId: "KMB", route: "234X", direction: "尖沙咀東", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/9E970734315233A2/234X/1" },
+            { id: "4", busCoId: "KMB", route: "40", direction: "麗港城", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/95797E4D2901A516/40/1" },
+            { id: "5", busCoId: "KMB", route: "48X", direction: "禾輋", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/D8F172EF79F3414D/48X/1" },
+            { id: "6", busCoId: "KMB", route: "34", direction: "葵盛", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/939FE9A08B99174C/34/1" },
+            { id: "7", busCoId: "KMB", route: "34M", direction: "荃灣站", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/939FE9A08B99174C/34M/1" },
+            { id: "8", busCoId: "KMB", route: "A38", direction: "機場", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/1D7A47D38CE1E6D7/A38/1" },
+            { id: "9", busCoId: "KMB", route: "934", direction: "灣仔", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/939FE9A08B99174C/934/1" },
+            { id: "10", busCoId: "KMB", route: "A38", direction: "荃景圍天橋", stopName: "機場", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/7CB61EFB024D9025/A38/1", specialDir: "I" },
+            { id: "11", busCoId: "KMB", route: "68A", direction: "青衣站", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/ED364A58F885DC92/68A/1" },
+            { id: "12", busCoId: "KMB", route: "58M", direction: "屯門", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/12E6D91298FABAEE/58M/1" },
+            { id: "13", busCoId: "KMB", route: "67M", direction: "屯門", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/12E6D91298FABAEE/67M/1" },
+            { id: "14", busCoId: "KMB", route: "58M", direction: "葵芳", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/10860B611840CF22/58M/1" },
+            { id: "15", busCoId: "KMB", route: "67M", direction: "葵芳", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/10860B611840CF22/67M/1" },
+            { id: "16", busCoId: "KMB", route: "A38", direction: "荃灣", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/B7F443B0BB14A4EC/A38/1" },
+            { id: "17", busCoId: "MTR", route: "機場快綫", direction: "香港", stopName: "機場站", targetSrc: "https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=AEL&sta=AIR", mtrDir: "DOWN" },
+            { id: "18", busCoId: "MTR", route: "機場快綫", direction: "機場", stopName: "青衣站", targetSrc: "https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=AEL&sta=TSY", mtrDir: "UP" }
+        ];
+
+        // State variables
+        let currentInstructions = [...defaultInstructions];
+        let viewMode = 'LIST'; // 'LIST' or 'GRID'
+        let fontScaleIndex = 1; // 0: sm, 1: md, 2: lg, 3: xl
+        const fontScales = ['font-scale-sm', 'font-scale-md', 'font-scale-lg', 'font-scale-xl'];
+        let pinnedRouteIds = new Set(JSON.parse(localStorage.getItem('pinnedRoutes') || '[]'));
+        let isAudioEnabled = false;
+        let lastFetchedData = [];
+        let countdownSec = 10;
+        let countdownTimer = null;
+
+        function playChime() {
+            if (!isAudioEnabled) return;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.6);
+            } catch (e) {
+                console.log("Audio play blocked", e);
+            }
+        }
+
+        function toggleAudio() {
+            isAudioEnabled = !isAudioEnabled;
+            const btn = document.getElementById('soundIcon');
+            if (isAudioEnabled) {
+                btn.className = "fa-solid fa-volume-high text-emerald-400";
+                playChime();
+            } else {
+                btn.className = "fa-solid fa-volume-xmark text-slate-400";
+            }
+        }
+
+        function cycleFontSize() {
+            const body = document.getElementById('bodyRoot');
+            body.classList.remove(fontScales[fontScaleIndex]);
+            fontScaleIndex = (fontScaleIndex + 1) % fontScales.length;
+            body.classList.add(fontScales[fontScaleIndex]);
+        }
+
+        function toggleViewMode() {
+            viewMode = viewMode === 'LIST' ? 'GRID' : 'LIST';
+            document.getElementById('listViewContainer').classList.toggle('hidden', viewMode === 'GRID');
+            document.getElementById('gridViewContainer').classList.toggle('hidden', viewMode === 'LIST');
+            renderUI();
+        }
+
+        function togglePin(routeId, event) {
+            event.stopPropagation();
+            if (pinnedRouteIds.has(routeId)) {
+                pinnedRouteIds.delete(routeId);
+            } else {
+                pinnedRouteIds.add(routeId);
+            }
+            localStorage.setItem('pinnedRoutes', JSON.stringify([...pinnedRouteIds]));
+            renderUI();
+        }
+
+        function parseEtaToMinutes(etaStr) {
+            if (!etaStr) return null;
+            let formattedStr = etaStr.replace(' ', 'T');
+            if (!formattedStr.includes('+') && !formattedStr.endsWith('Z')) {
+                formattedStr += '+08:00';
+            }
+            const etaDate = new Date(formattedStr);
+            if (isNaN(etaDate.getTime())) return null;
+
+            const now = new Date();
+            const diffMs = etaDate - now;
+            const diffMin = Math.floor(diffMs / 60000);
+            
+            if (diffMin < 0) {
+                if (diffMs > -90000) return 0; // Arriving / just arrived
+                return null;
+            }
+            return diffMin;
+        }
+
+        async function fetchInstructionETA(item) {
+            try {
+                const response = await fetch(item.targetSrc);
+                if (!response.ok) return null;
+                const json = await response.json();
+                let diffs = [];
+
+                // 1. GMB / Standard ETA format
+                if (json.type === "ETA-Route-Stop" || (json.data && json.data.eta)) {
+                    const list = json.data && json.data.eta ? json.data.eta : [];
+                    for (const entry of list) {
+                        if (typeof entry.diff === 'number') {
+                            diffs.push(entry.diff);
+                        } else if (entry.timestamp) {
+                            const min = parseEtaToMinutes(entry.timestamp);
+                            if (min !== null) diffs.push(min);
+                        }
+                    }
+                }
+                // 2. MTR API format
+                else if (item.busCoId === "MTR" && json.data) {
+                    const staKey = item.targetSrc.includes("sta=AIR") ? "AEL-AIR" : "AEL-TSY";
+                    const stData = json.data[staKey];
+                    if (stData) {
+                        const mtrList = stData[item.mtrDir] || [];
+                        for (const entry of mtrList) {
+                            if (entry.time) {
+                                const min = parseEtaToMinutes(entry.time);
+                                if (min !== null) diffs.push(min);
+                            }
+                        }
+                    }
+                }
+                // 3. Standard KMB API format
+                else if (json.data && Array.isArray(json.data)) {
+                    let list = json.data;
+                    if (item.specialDir) {
+                        list = list.filter(x => x.dir === item.specialDir);
+                    }
+                    for (const entry of list) {
+                        if (entry.eta) {
+                            const min = parseEtaToMinutes(entry.eta);
+                            if (min !== null) diffs.push(min);
+                        }
+                    }
+                }
+
+                diffs = diffs.filter(v => v !== null && v >= 0).slice(0, 3);
+                return diffs.length > 0 ? diffs : null;
+            } catch (err) {
+                return null;
+            }
+        }
+
+        function createEtaBadgeHTML(minutes) {
+            let colorClass = "bg-emerald-600 text-white";
+            let displayVal = minutes === 0 ? "到著" : minutes;
+            let extraClass = "";
+
+            if (minutes === 0 || minutes < 9) {
+                colorClass = "bg-red-600 text-white font-black";
+                if (minutes === 0 || minutes <= 2) {
+                    extraClass = "eta-arriving";
+                }
+            } else if (minutes >= 9 && minutes <= 15) {
+                colorClass = "bg-amber-600 text-white";
+            } else {
+                colorClass = "bg-emerald-600 text-white";
+            }
+
+            return `<span class="inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-sm font-bold min-w-[2.2rem] shadow-md ${colorClass} ${extraClass}">
+                ${displayVal}${minutes !== 0 ? '<span class="text-[0.65rem] ml-0.5 opacity-80">分</span>' : ''}
+            </span>`;
+        }
+
+        async function fetchAndRenderAll(isManual = false) {
+            const refreshIcon = document.getElementById("refreshIcon");
+            if (refreshIcon) refreshIcon.classList.add("fa-spin");
+
+            const results = await Promise.all(currentInstructions.map(async (item) => {
+                const etaValues = await fetchInstructionETA(item);
+                return { item, etaValues };
+            }));
+
+            // Check if any bus is arriving <= 2 mins to trigger audio
+            let hasImminentBus = results.some(r => r.etaValues && r.etaValues.some(m => m <= 2));
+            if (hasImminentBus && isAudioEnabled) {
+                playChime();
+            }
+
+            lastFetchedData = results;
+            renderUI();
+
+            if (refreshIcon) {
+                setTimeout(() => refreshIcon.classList.remove("fa-spin"), 500);
+            }
+
+            // Reset countdown timer
+            countdownSec = 10;
+        }
+
+        function renderUI() {
+            const tbody = document.getElementById("etaTableBody");
+            const gridContainer = document.getElementById("gridViewContainer");
+            const emptyState = document.getElementById("emptyState");
+
+            let filtered = [...lastFetchedData];
+
+            // Keep pinned routes at the top while preserving default route order
+            filtered.sort((a, b) => {
+                const isAPinned = pinnedRouteIds.has(a.item.id);
+                const isBPinned = pinnedRouteIds.has(b.item.id);
+                if (isAPinned && !isBPinned) return -1;
+                if (!isAPinned && isBPinned) return 1;
+                return 0;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = "";
+                gridContainer.innerHTML = "";
+                emptyState.classList.remove("hidden");
+                return;
+            } else {
+                emptyState.classList.add("hidden");
+            }
+
+            let listHTML = "";
+            let gridHTML = "";
+
+            filtered.forEach(res => {
+                const { item, etaValues } = res;
+                const isPinned = pinnedRouteIds.has(item.id);
+                const starIcon = isPinned ? 'fa-solid fa-star text-amber-400' : 'fa-regular fa-star text-slate-600 hover:text-slate-400';
+
+                let badgesHTML = '<span class="text-xs text-slate-500 font-normal">尾班車已過 / 暫無服務</span>';
+                if (etaValues && etaValues.length > 0) {
+                    badgesHTML = etaValues.map(min => createEtaBadgeHTML(min)).join('<span class="mx-1 text-slate-600">,</span>');
+                }
+
+                const companyBadgeColor = item.busCoId === 'KMB' ? 'bg-red-600/20 text-red-400 border-red-500/30' : 'bg-blue-600/20 text-blue-400 border-blue-500/30';
+
+                // 1. List Row HTML
+                listHTML += `
+                    <tr class="hover:bg-slate-800/40 transition-colors border-b border-slate-800/40">
+                        <td class="py-3 px-3 text-center">
+                            <button onclick="togglePin('${item.id}', event)" class="p-1 focus:outline-none">
+                                <i class="${starIcon}"></i>
+                            </button>
+                        </td>
+                        <td class="py-3 px-3">
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-600 text-white font-extrabold tracking-wide text-sm shadow">
+                                ${item.route}
+                            </div>
+                        </td>
+                        <td class="py-3 px-3">
+                            <div class="font-bold text-slate-100 flex items-center gap-1">
+                                <i class="fa-solid fa-arrow-right text-xs text-slate-500"></i>
+                                <span>${item.direction}</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-3 text-slate-300 text-sm">
+                            <span class="inline-flex items-center gap-1 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
+                                <i class="fa-solid fa-location-dot text-xs text-amber-500"></i>
+                                ${item.stopName}
+                            </span>
+                        </td>
+                        <td class="py-3 px-3">
+                            <div class="flex items-center flex-wrap gap-1">
+                                ${badgesHTML}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+
+                // 2. Grid Card HTML
+                gridHTML += `
+                    <div class="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-4 flex flex-col justify-between shadow-lg relative group transition-all">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="px-3 py-1 bg-blue-600 text-white rounded-xl font-black text-lg tracking-wider shadow">
+                                    ${item.route}
+                                </span>
+                                <span class="text-xs px-2 py-0.5 rounded border font-mono ${companyBadgeColor}">
+                                    ${item.busCoId}
+                                </span>
+                            </div>
+                            <button onclick="togglePin('${item.id}', event)" class="p-1 text-slate-500 hover:text-amber-400 focus:outline-none">
+                                <i class="${starIcon} text-lg"></i>
+                            </button>
+                        </div>
+
+                        <div class="space-y-1 mb-4">
+                            <div class="text-xs text-slate-400">開往 Destination</div>
+                            <div class="text-base font-bold text-white flex items-center gap-1.5">
+                                <i class="fa-solid fa-location-arrow text-blue-400 text-xs"></i>
+                                ${item.direction}
+                            </div>
+                            <div class="text-xs text-slate-400 mt-2">車站 Stop</div>
+                            <div class="text-xs text-slate-300 font-medium">
+                                ${item.stopName}
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
+                            <div class="text-xs text-slate-400">下班 ETA</div>
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                ${badgesHTML}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            tbody.innerHTML = listHTML;
+            gridContainer.innerHTML = gridHTML;
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-GB', { hour12: false });
+            
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const dateStr = `${String(now.getDate()).padStart(2, '0')} ${months[now.getMonth()]} ${now.getFullYear()}`;
+
+            const dClock = document.getElementById("desktopClock");
+            const dDate = document.getElementById("desktopDate");
+            const mClock = document.getElementById("mobileClock");
+
+            if (dClock) dClock.textContent = timeStr;
+            if (dDate) dDate.textContent = dateStr;
+            if (mClock) mClock.textContent = timeStr;
+        }
+
+        function startTimer() {
+            setInterval(updateClock, 1000);
+            updateClock();
+
+            setInterval(() => {
+                countdownSec--;
+                const countText = document.getElementById("countdownText");
+                if (countText) countText.textContent = `${countdownSec}s`;
+
+                if (countdownSec <= 0) {
+                    fetchAndRenderAll();
+                }
+            }, 1000);
+        }
+
+        // Initialize application when DOM is loaded
+        window.addEventListener("DOMContentLoaded", () => {
+            fetchAndRenderAll();
+            startTimer();
+        });
+    </script>
+</body>
+</html>
