@@ -137,10 +137,10 @@
                 <table class="w-full text-left border-collapse sticky-header">
                     <thead>
                         <tr class="border-b border-slate-800 text-slate-400 text-xs md:text-sm font-semibold tracking-wider">
-                            <th class="py-3 px-3 w-24">路線</th>
-                            <th class="py-3 px-3 w-32 md:w-44">目的地</th>
-                            <th class="py-3 px-3 w-36 md:w-56">候車站</th>
-                            <th class="py-3 px-3">預計到達時間 (分鐘)</th>
+                            <th class="py-2.5 px-1.5 md:py-3 md:px-3 w-16 md:w-24">路線</th>
+                            <th class="py-2.5 px-1.5 md:py-3 md:px-3 w-24 md:w-40">目的地</th>
+                            <th class="py-2.5 px-1.5 md:py-3 md:px-3 w-24 md:w-44">候車站</th>
+                            <th class="py-2.5 px-1.5 md:py-3 md:px-3">預計到達時間 (分鐘)</th>
                         </tr>
                     </thead>
                     <tbody id="etaTableBody" class="divide-y divide-slate-800/60 font-medium">
@@ -337,8 +337,8 @@
                 colorClass = "bg-emerald-600 text-white";
             }
 
-            return `<span class="inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-sm font-bold min-w-[2.2rem] shadow-md ${colorClass} ${extraClass}">
-                ${displayVal}${minutes !== 0 ? '<span class="text-[0.65rem] ml-0.5 opacity-80">分</span>' : ''}
+            return `<span class="inline-flex items-center justify-center px-1.5 md:px-2.5 py-0.5 md:py-1 rounded-md md:rounded-lg text-xs md:text-sm font-bold min-w-[1.75rem] md:min-w-[2.2rem] shadow-md flex-shrink-0 ${colorClass} ${extraClass}">
+                ${displayVal}${minutes !== 0 ? '<span class="text-[0.6rem] md:text-[0.65rem] ml-0.5 opacity-80">分</span>' : ''}
             </span>`;
         }
 
@@ -400,23 +400,23 @@
                 // 1. List Row HTML
                 listHTML += `
                     <tr class="hover:bg-slate-800/40 transition-colors border-b border-slate-800/40">
-                        <td class="py-3 px-3">
-                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-600 text-white font-extrabold tracking-wide text-sm shadow">
+                        <td class="py-2.5 px-1.5 md:py-3 md:px-3">
+                            <div class="inline-flex items-center gap-1 px-1.5 md:px-2.5 py-0.5 md:py-1 rounded-md md:rounded-lg bg-blue-600 text-white font-extrabold tracking-wide text-xs md:text-sm shadow">
                                 ${item.route}
                             </div>
                         </td>
-                        <td class="py-3 px-3">
-                            <div class="font-bold text-slate-100">
+                        <td class="py-2.5 px-1.5 md:py-3 md:px-3">
+                            <div class="font-bold text-slate-100 text-xs md:text-base truncate">
                                 <span>${item.direction}</span>
                             </div>
                         </td>
-                        <td class="py-3 px-3 text-slate-300 text-sm">
-                            <span class="inline-flex items-center bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
+                        <td class="py-2.5 px-1.5 md:py-3 md:px-3 text-slate-300 text-xs md:text-sm">
+                            <span class="inline-flex items-center bg-slate-800 px-1.5 md:px-2 py-0.5 rounded border border-slate-700 truncate max-w-full">
                                 ${item.stopName}
                             </span>
                         </td>
-                        <td class="py-3 px-3">
-                            <div class="flex items-center flex-wrap gap-1.5">
+                        <td class="py-2.5 px-1.5 md:py-3 md:px-3">
+                            <div class="flex items-center flex-nowrap gap-1 md:gap-1.5 overflow-x-auto">
                                 ${badgesHTML}
                             </div>
                         </td>
