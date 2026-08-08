@@ -137,7 +137,6 @@
                 <table class="w-full text-left border-collapse sticky-header">
                     <thead>
                         <tr class="border-b border-slate-800 text-slate-400 text-xs md:text-sm font-semibold tracking-wider">
-                            <th class="py-3 px-3 w-10 text-center"><i class="fa-regular fa-star"></i></th>
                             <th class="py-3 px-3 w-24">路線</th>
                             <th class="py-3 px-3 w-32 md:w-44">目的地</th>
                             <th class="py-3 px-3 w-36 md:w-56">候車站</th>
@@ -199,7 +198,6 @@
         let viewMode = 'LIST'; // 'LIST' or 'GRID'
         let fontScaleIndex = 1; // 0: sm, 1: md, 2: lg, 3: xl
         const fontScales = ['font-scale-sm', 'font-scale-md', 'font-scale-lg', 'font-scale-xl'];
-        let pinnedRouteIds = new Set(JSON.parse(localStorage.getItem('pinnedRoutes') || '[]'));
         let isAudioEnabled = false;
         let lastFetchedData = [];
         let countdownSec = 10;
@@ -246,17 +244,6 @@
             viewMode = viewMode === 'LIST' ? 'GRID' : 'LIST';
             document.getElementById('listViewContainer').classList.toggle('hidden', viewMode === 'GRID');
             document.getElementById('gridViewContainer').classList.toggle('hidden', viewMode === 'LIST');
-            renderUI();
-        }
-
-        function togglePin(routeId, event) {
-            event.stopPropagation();
-            if (pinnedRouteIds.has(routeId)) {
-                pinnedRouteIds.delete(routeId);
-            } else {
-                pinnedRouteIds.add(routeId);
-            }
-            localStorage.setItem('pinnedRoutes', JSON.stringify([...pinnedRouteIds]));
             renderUI();
         }
 
@@ -388,15 +375,6 @@
 
             let filtered = [...lastFetchedData];
 
-            // Keep pinned routes at the top while preserving default route order
-            filtered.sort((a, b) => {
-                const isAPinned = pinnedRouteIds.has(a.item.id);
-                const isBPinned = pinnedRouteIds.has(b.item.id);
-                if (isAPinned && !isBPinned) return -1;
-                if (!isAPinned && isBPinned) return 1;
-                return 0;
-            });
-
             if (filtered.length === 0) {
                 tbody.innerHTML = "";
                 gridContainer.innerHTML = "";
@@ -411,12 +389,10 @@
 
             filtered.forEach(res => {
                 const { item, etaValues } = res;
-                const isPinned = pinnedRouteIds.has(item.id);
-                const starIcon = isPinned ? 'fa-solid fa-star text-amber-400' : 'fa-regular fa-star text-slate-600 hover:text-slate-400';
 
                 let badgesHTML = '<span class="text-xs text-slate-500 font-normal">尾班車已過 / 暫無服務</span>';
                 if (etaValues && etaValues.length > 0) {
-                    badgesHTML = etaValues.map(min => createEtaBadgeHTML(min)).join('<span class="mx-1 text-slate-600">,</span>');
+                    badgesHTML = etaValues.map(min => createEtaBadgeHTML(min)).join('');
                 }
 
                 const companyBadgeColor = item.busCoId === 'KMB' ? 'bg-red-600/20 text-red-400 border-red-500/30' : 'bg-blue-600/20 text-blue-400 border-blue-500/30';
@@ -424,11 +400,6 @@
                 // 1. List Row HTML
                 listHTML += `
                     <tr class="hover:bg-slate-800/40 transition-colors border-b border-slate-800/40">
-                        <td class="py-3 px-3 text-center">
-                            <button onclick="togglePin('${item.id}', event)" class="p-1 focus:outline-none">
-                                <i class="${starIcon}"></i>
-                            </button>
-                        </td>
                         <td class="py-3 px-3">
                             <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-600 text-white font-extrabold tracking-wide text-sm shadow">
                                 ${item.route}
@@ -447,7 +418,7 @@
                             </span>
                         </td>
                         <td class="py-3 px-3">
-                            <div class="flex items-center flex-wrap gap-1">
+                            <div class="flex items-center flex-wrap gap-1.5">
                                 ${badgesHTML}
                             </div>
                         </td>
@@ -466,9 +437,6 @@
                                     ${item.busCoId}
                                 </span>
                             </div>
-                            <button onclick="togglePin('${item.id}', event)" class="p-1 text-slate-500 hover:text-amber-400 focus:outline-none">
-                                <i class="${starIcon} text-lg"></i>
-                            </button>
                         </div>
 
                         <div class="space-y-1 mb-4">
