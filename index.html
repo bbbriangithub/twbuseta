@@ -3,178 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bus ETA 1.1</title>
+    <title>Britan 交通 Bus ETA</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         body {
-            background-color: #121212;
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-            padding: 8px;
-            width: 100%;
-            overflow-x: hidden;
-            font-size: 15px; /* Default for mobile / smart phone */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
         }
 
-        .title-line {
-            font-weight: bold;
-            margin-bottom: 10px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            text-align: left;
+        .sticky-header th {
+            position: sticky;
+            top: 0;
+            background-color: #0f172a;
+            z-index: 10;
         }
 
-        /* Smart Phone default: 15px */
-        @media (min-width: 600px) and (max-width: 900px) {
-            body, .title-line, table.eta-table {
-                font-size: 40px; /* Android tablet */
-            }
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(0.97); }
         }
 
-        @media (min-width: 901px) {
-            body, .title-line, table.eta-table {
-                font-size: 50px; /* iPad / Large screen */
-            }
+        .eta-arriving {
+            animation: pulse-subtle 1.2s infinite ease-in-out;
         }
 
-        table.eta-table {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
+        /* Custom scrollbar for mobile overflow */
+        ::-webkit-scrollbar {
+            height: 4px;
+            width: 4px;
         }
-
-        table.eta-table th, 
-        table.eta-table td {
-            text-align: left;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            padding: 6px 4px;
-            vertical-align: middle;
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
         }
-
-        table.eta-table th {
-            font-weight: bold;
-            border-bottom: 1px solid #333333;
-            color: #dddddd;
-        }
-
-        /* Specified column widths */
-        .col-dir { width: 20%; }
-        .col-route { width: 20%; }
-        .col-stop { width: 28%; }
-        .col-eta { width: 32%; }
-
-        .route-badge {
-            background-color: #1d4ed8; /* Blue rectangular background */
-            color: #ffffff;
-            padding: 2px 6px;
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
             border-radius: 4px;
-            display: inline-block;
-            font-weight: bold;
-            max-width: 100%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .eta-container {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            overflow: hidden;
-        }
-
-        .eta-badge {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 4px;
-            color: #ffffff;
-            font-weight: bold;
-            text-align: center;
-            min-width: 1.8em;
-        }
-
-        /* ETA background colors */
-        .eta-red {
-            background-color: #dc2626; /* < 9 minutes or 到著 */
-        }
-
-        .eta-orange {
-            background-color: #ea580c; /* >= 9 and <= 15 minutes */
-        }
-
-        .eta-green {
-            background-color: #16a34a; /* > 15 minutes */
         }
     </style>
 </head>
-<body>
-    <div id="titleContainer" class="title-line">荃景圍交通 --Loading--</div>
+<body class="min-h-screen flex flex-col p-2 md:p-4 max-w-7xl mx-auto antialiased">
 
-    <table class="eta-table">
-        <thead>
-            <tr>
-                <th class="col-route">路線</th>
-                <th class="col-dir">往</th>
-                <th class="col-stop">車站</th>
-                <th class="col-eta">分鐘</th>
-            </tr>
-        </thead>
-        <tbody id="etaTableBody">
-            <!-- Dynamic rows will be inserted here -->
-        </tbody>
-    </table>
+    <!-- Header section -->
+    <header class="bg-slate-900 border border-slate-800 rounded-2xl p-3 md:p-4 mb-3 shadow-lg flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+            <div class="p-2 bg-blue-600 rounded-xl text-white shadow-md shadow-blue-500/20">
+                <i class="fa-solid fa-bus text-lg md:text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-base sm:text-xl font-black text-slate-100 tracking-tight">Britan 交通</h1>
+            </div>
+        </div>
 
+        <div class="flex items-center gap-3">
+            <!-- Clock display -->
+            <div class="hidden sm:flex flex-col text-right">
+                <div class="text-sm md:text-base font-bold font-mono text-emerald-400" id="desktopClock">--:--:--</div>
+                <div class="text-[0.65rem] md:text-xs text-slate-400 font-mono" id="desktopDate">-- --- ----</div>
+            </div>
+
+            <!-- Auto refresh indicator -->
+            <div class="flex items-center gap-1.5 bg-slate-800 border border-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-mono">
+                <i class="fa-solid fa-arrows-rotate text-blue-400 text-xs" id="refreshIcon"></i>
+                <span id="countdownText" class="text-slate-300 font-semibold">10s</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main content container -->
+    <main class="flex-1 flex flex-col min-h-0">
+        <!-- List View Container -->
+        <div id="listViewContainer" class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl flex-1 flex flex-col">
+            <div class="overflow-x-auto flex-1">
+                <table class="w-full text-left border-collapse sticky-header">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-slate-400 text-xs md:text-sm font-semibold tracking-wider">
+                            <th class="py-2.5 px-2 md:py-3 md:px-3 w-16 md:w-24">路線</th>
+                            <th class="py-2.5 px-2 md:py-3 md:px-3 w-24 md:w-40">目的地</th>
+                            <th class="py-2.5 px-2 md:py-3 md:px-3 w-24 md:w-44">候車站</th>
+                            <th class="py-2.5 px-2 md:py-3 md:px-3">預計到達時間 (分鐘)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="etaTableBody" class="divide-y divide-slate-800/60 font-medium">
+                        <!-- Dynamic rows loaded via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Empty state message -->
+        <div id="emptyState" class="hidden flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-500">
+            <i class="fa-solid fa-bus-simple text-4xl mb-2 text-slate-700"></i>
+            <p class="text-sm">沒有符合條件的路線班次</p>
+        </div>
+    </main>
+
+    <!-- JavaScript Logic -->
     <script>
-        const instructions = [
-            { busCoId: "KMB", route: "234A", direction: "荃灣西", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/9E970734315233A2/234A/1" },
-            { busCoId: "KMB", route: "234B", direction: "荃灣西", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/9E970734315233A2/234B/1" },
-            { busCoId: "KMB", route: "234X", direction: "尖沙咀", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/9E970734315233A2/234X/1" },
-            { busCoId: "KMB", route: "40", direction: "麗港城", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/95797E4D2901A516/40/1" },
-            { busCoId: "KMB", route: "48X", direction: "禾輋", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/D8F172EF79F3414D/48X/1" },
-            { busCoId: "KMB", route: "34", direction: "葵盛", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/939FE9A08B99174C/34/1" },
-            { busCoId: "KMB", route: "34M", direction: "荃灣", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/939FE9A08B99174C/34M/1" },
-            { busCoId: "KMB", route: "A38", direction: "機場", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/1D7A47D38CE1E6D7/A38/1" },
-            { busCoId: "KMB", route: "934", direction: "灣仔", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/939FE9A08B99174C/934/1" },
-            { busCoId: "KMB", route: "A38", direction: "荃威", stopName: "機場", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/7CB61EFB024D9025/A38/1", specialDir: "I" },
-            { busCoId: "KMB", route: "68A", direction: "青衣站", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/ED364A58F885DC92/68A/1" },
-            { busCoId: "KMB", route: "58M", direction: "屯門", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/12E6D91298FABAEE/58M/1" },
-            { busCoId: "KMB", route: "67M", direction: "屯門", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/12E6D91298FABAEE/67M/1" },
-            { busCoId: "KMB", route: "58M", direction: "葵芳", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/10860B611840CF22/58M/1" },
-            { busCoId: "KMB", route: "67M", direction: "葵芳", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/10860B611840CF22/67M/1" },
-            { busCoId: "KMB", route: "A38", direction: "荃威", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/B7F443B0BB14A4EC/A38/1" },
-            { busCoId: "MTR", route: "AEL", direction: "香港", stopName: "機場", targetSrc: "https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=AEL&sta=AIR", mtrDir: "DOWN" },
-            { busCoId: "MTR", route: "AEL", direction: "機場", stopName: "青衣", targetSrc: "https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=AEL&sta=TSY", mtrDir: "UP" }
+        // Instructions dataset with route configurations
+        const defaultInstructions = [
+            { id: "1", busCoId: "KMB", route: "234A", direction: "荃灣站", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/9E970734315233A2/234A/1" },
+            { id: "2", busCoId: "KMB", route: "234B", direction: "荃灣站", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/9E970734315233A2/234B/1" },
+            { id: "3", busCoId: "KMB", route: "234X", direction: "尖沙咀東", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/9E970734315233A2/234X/1" },
+            { id: "4", busCoId: "KMB", route: "40", direction: "麗港城", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/95797E4D2901A516/40/1" },
+            { id: "5", busCoId: "KMB", route: "48X", direction: "禾輋", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/D8F172EF79F3414D/48X/1" },
+            { id: "6", busCoId: "KMB", route: "34", direction: "葵盛", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/939FE9A08B99174C/34/1" },
+            { id: "7", busCoId: "KMB", route: "34M", direction: "荃灣站", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/939FE9A08B99174C/34M/1" },
+            { id: "8", busCoId: "KMB", route: "A38", direction: "機場", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/1D7A47D38CE1E6D7/A38/1" },
+            { id: "9", busCoId: "KMB", route: "934", direction: "灣仔", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/939FE9A08B99174C/934/1" },
+            { id: "10", busCoId: "KMB", route: "A38", direction: "荃景圍天橋", stopName: "機場", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/7CB61EFB024D9025/A38/1", specialDir: "I" },
+            { id: "11", busCoId: "KMB", route: "68A", direction: "青衣站", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/ED364A58F885DC92/68A/1" },
+            { id: "12", busCoId: "KMB", route: "58M", direction: "屯門", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/12E6D91298FABAEE/58M/1" },
+            { id: "13", busCoId: "KMB", route: "67M", direction: "屯門", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/12E6D91298FABAEE/67M/1" },
+            { id: "14", busCoId: "KMB", route: "58M", direction: "葵芳", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/10860B611840CF22/58M/1" },
+            { id: "15", busCoId: "KMB", route: "67M", direction: "葵芳", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/10860B611840CF22/67M/1" },
+            { id: "16", busCoId: "KMB", route: "A38", direction: "荃灣", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/B7F443B0BB14A4EC/A38/1" },
+            { id: "17", busCoId: "MTR", route: "機場快綫", direction: "香港", stopName: "機場站", targetSrc: "https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=AEL&sta=AIR", mtrDir: "DOWN" },
+            { id: "18", busCoId: "MTR", route: "機場快綫", direction: "機場", stopName: "青衣站", targetSrc: "https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=AEL&sta=TSY", mtrDir: "UP" }
         ];
 
-        function getFormattedHeaderTime() {
-            const now = new Date();
-            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            const day = String(now.getDate()).padStart(2, '0');
-            const month = months[now.getMonth()];
-            const year = now.getFullYear();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
-        }
-
-        function updateTitleTime() {
-            const titleEl = document.getElementById("titleContainer");
-            if (titleEl) {
-                titleEl.textContent = `荃景圍交通 ${getFormattedHeaderTime()}`;
-            }
-        }
+        // State variables
+        let currentInstructions = [...defaultInstructions];
+        let lastFetchedData = [];
+        let countdownSec = 10;
+        let timerInterval = null;
 
         function parseEtaToMinutes(etaStr) {
             if (!etaStr) return null;
-            // Support both ISO format and MTR format ("YYYY-MM-DD HH:mm:ss")
             let formattedStr = etaStr.replace(' ', 'T');
             if (!formattedStr.includes('+') && !formattedStr.endsWith('Z')) {
                 formattedStr += '+08:00';
@@ -185,10 +144,9 @@
             const now = new Date();
             const diffMs = etaDate - now;
             const diffMin = Math.floor(diffMs / 60000);
-            
-            // Allow 0 or slightly past arrival (up to -1 min) to display as 0 ("到著")
+
             if (diffMin < 0) {
-                if (diffMs > -90000) return 0; // Bus arriving / just arrived
+                if (diffMs > -90000) return 0; // Bus arriving or just arrived
                 return null;
             }
             return diffMin;
@@ -202,7 +160,6 @@
 
                 let diffs = [];
 
-                // 1. Check GMB / ETA-Route-Stop JSON style
                 if (json.type === "ETA-Route-Stop" || (json.data && json.data.eta)) {
                     const list = json.data && json.data.eta ? json.data.eta : [];
                     for (const entry of list) {
@@ -213,9 +170,7 @@
                             if (min !== null) diffs.push(min);
                         }
                     }
-                }
-                // 2. Check MTR API response
-                else if (item.busCoId === "MTR" && json.data) {
+                } else if (item.busCoId === "MTR" && json.data) {
                     const staKey = item.targetSrc.includes("sta=AIR") ? "AEL-AIR" : "AEL-TSY";
                     const stData = json.data[staKey];
                     if (stData) {
@@ -227,9 +182,7 @@
                             }
                         }
                     }
-                }
-                // 3. Standard KMB API response
-                else if (json.data && Array.isArray(json.data)) {
+                } else if (json.data && Array.isArray(json.data)) {
                     let list = json.data;
                     if (item.specialDir) {
                         list = list.filter(x => x.dir === item.specialDir);
@@ -242,76 +195,140 @@
                     }
                 }
 
-                // Clean & slice top 3 valid ETAs
                 diffs = diffs.filter(v => v !== null && v >= 0).slice(0, 3);
                 return diffs.length > 0 ? diffs : null;
             } catch (err) {
-                // Exception handling when API fails or overnight service ended
                 return null;
             }
         }
 
         function createEtaBadgeHTML(minutes) {
-            let colorClass = "eta-green";
-            let displayVal = minutes;
+            let colorClass = "bg-emerald-600 text-white";
+            let displayVal = minutes === 0 ? "到著" : minutes;
+            let extraClass = "";
 
-            if (minutes === 0) {
-                displayVal = "到著";
-                colorClass = "eta-red";
-            } else if (minutes < 9) {
-                colorClass = "eta-red";
+            if (minutes === 0 || minutes < 9) {
+                colorClass = "bg-red-600 text-white font-black";
+                if (minutes === 0 || minutes <= 2) {
+                    extraClass = "eta-arriving";
+                }
             } else if (minutes >= 9 && minutes <= 15) {
-                colorClass = "eta-orange";
+                colorClass = "bg-amber-600 text-white";
             } else {
-                colorClass = "eta-green";
+                colorClass = "bg-emerald-600 text-white";
             }
 
-            return `<span class="eta-badge ${colorClass}">${displayVal}</span>`;
+            return `<span class="inline-flex items-center justify-center px-1.5 md:px-2.5 py-0.5 md:py-1 rounded-md md:rounded-lg text-xs md:text-sm font-bold min-w-[1.75rem] md:min-w-[2.2rem] shadow-sm flex-shrink-0 ${colorClass} ${extraClass}">
+                ${displayVal}${minutes !== 0 ? '<span class="text-[0.6rem] md:text-[0.65rem] ml-0.5 opacity-80">分</span>' : ''}
+            </span>`;
         }
 
         async function fetchAndRenderAll() {
-            updateTitleTime();
+            const refreshIcon = document.getElementById("refreshIcon");
+            if (refreshIcon) refreshIcon.classList.add("fa-spin");
 
-            // Fetch all ETA instruction lines concurrently
-            const results = await Promise.all(instructions.map(async (item) => {
+            const results = await Promise.all(currentInstructions.map(async (item) => {
                 const etaValues = await fetchInstructionETA(item);
                 return { item, etaValues };
             }));
 
-            const tbody = document.getElementById("etaTableBody");
-            let htmlBuffer = "";
+            lastFetchedData = results;
+            renderUI();
 
-            for (const res of results) {
-                // Skip the route if overnight buses ended or no replies/null
-                if (!res.etaValues || res.etaValues.length === 0) {
-                    continue;
+            if (refreshIcon) {
+                setTimeout(() => refreshIcon.classList.remove("fa-spin"), 500);
+            }
+
+            countdownSec = 10;
+        }
+
+        function renderUI() {
+            const tbody = document.getElementById("etaTableBody");
+            const emptyState = document.getElementById("emptyState");
+
+            if (lastFetchedData.length === 0) {
+                tbody.innerHTML = "";
+                emptyState.classList.remove("hidden");
+                return;
+            } else {
+                emptyState.classList.add("hidden");
+            }
+
+            let listHTML = "";
+
+            lastFetchedData.forEach(res => {
+                const { item, etaValues } = res;
+
+                let badgesHTML = '<span class="text-xs text-slate-500 font-normal">尾班車已過 / 暫無服務</span>';
+                if (etaValues && etaValues.length > 0) {
+                    badgesHTML = etaValues.map(min => createEtaBadgeHTML(min)).join('');
                 }
 
-                const badgesHTML = res.etaValues.map(min => createEtaBadgeHTML(min)).join("");
-
-                htmlBuffer += `
-                    <tr>
-                        <td class="col-route"><span class="route-badge">${res.item.route}</span></td>
-                        <td class="col-dir">${res.item.direction}</td>
-                        <td class="col-stop">${res.item.stopName}</td>
-                        <td class="col-eta">
-                            <div class="eta-container">${badgesHTML}</div>
+                listHTML += `
+                    <tr class="hover:bg-slate-800/40 transition-colors border-b border-slate-800/40">
+                        <td class="py-2.5 px-2 md:py-3 md:px-3">
+                            <div class="inline-flex items-center gap-1 px-1.5 md:px-2.5 py-0.5 md:py-1 rounded-md md:rounded-lg bg-blue-600 text-white font-extrabold tracking-wide text-xs md:text-sm shadow">
+                                ${item.route}
+                            </div>
+                        </td>
+                        <td class="py-2.5 px-2 md:py-3 md:px-3">
+                            <div class="font-bold text-slate-100 text-xs md:text-base truncate">
+                                <span>${item.direction}</span>
+                            </div>
+                        </td>
+                        <td class="py-2.5 px-2 md:py-3 md:px-3 text-slate-300 text-xs md:text-sm">
+                            <span class="inline-flex items-center bg-slate-800 px-1.5 md:px-2 py-0.5 rounded border border-slate-700 truncate max-w-full">
+                                ${item.stopName}
+                            </span>
+                        </td>
+                        <td class="py-2.5 px-2 md:py-3 md:px-3">
+                            <div class="flex items-center flex-nowrap gap-1 md:gap-1.5 overflow-x-auto">
+                                ${badgesHTML}
+                            </div>
                         </td>
                     </tr>
                 `;
-            }
+            });
 
-            tbody.innerHTML = htmlBuffer;
+            tbody.innerHTML = listHTML;
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const clockEl = document.getElementById("desktopClock");
+            const dateEl = document.getElementById("desktopDate");
+
+            if (clockEl) {
+                clockEl.textContent = now.toLocaleTimeString('zh-HK', { hour12: false });
+            }
+            if (dateEl) {
+                const options = { year: 'numeric', month: 'short', day: 'numeric' };
+                dateEl.textContent = now.toLocaleDateString('en-GB', options);
+            }
+        }
+
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+
+            timerInterval = setInterval(() => {
+                updateClock();
+
+                countdownSec--;
+                const countdownText = document.getElementById("countdownText");
+                if (countdownText) {
+                    countdownText.textContent = `${countdownSec}s`;
+                }
+
+                if (countdownSec <= 0) {
+                    fetchAndRenderAll();
+                }
+            }, 1000);
         }
 
         window.addEventListener("DOMContentLoaded", () => {
+            updateClock();
             fetchAndRenderAll();
-
-            // Update title timestamp every second
-            setInterval(updateTitleTime, 1000);
-
-            // Hidden auto-refresh ETA data every 10 seconds without buttons or alerts
-            setInterval(fetchAndRenderAll, 10000);
+            startTimer();
         });
     </script>
 </body>
