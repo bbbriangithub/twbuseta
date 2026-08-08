@@ -120,7 +120,7 @@
     <table class="eta-table">
         <thead>
             <tr>
-                <th class="col-dir">開往</th>
+                <th class="col-dir">往</th>
                 <th class="col-route">路線</th>
                 <th class="col-stop">車站</th>
                 <th class="col-eta">分鐘</th>
@@ -133,8 +133,8 @@
 
     <script>
         const instructions = [
-            { busCoId: "KMB", route: "234A", direction: "荃灣", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/9E970734315233A2/234A/1" },
-            { busCoId: "KMB", route: "234B", direction: "荃灣", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/9E970734315233A2/234B/1" },
+            { busCoId: "KMB", route: "234A", direction: "荃灣西", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/9E970734315233A2/234A/1" },
+            { busCoId: "KMB", route: "234B", direction: "荃灣西", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/9E970734315233A2/234B/1" },
             { busCoId: "KMB", route: "234X", direction: "尖沙咀", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/9E970734315233A2/234X/1" },
             { busCoId: "KMB", route: "40", direction: "麗港城", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/95797E4D2901A516/40/1" },
             { busCoId: "KMB", route: "48X", direction: "禾輋", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/D8F172EF79F3414D/48X/1" },
@@ -142,13 +142,13 @@
             { busCoId: "KMB", route: "34M", direction: "荃灣", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/939FE9A08B99174C/34M/1" },
             { busCoId: "KMB", route: "A38", direction: "機場", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/1D7A47D38CE1E6D7/A38/1" },
             { busCoId: "KMB", route: "934", direction: "灣仔", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/939FE9A08B99174C/934/1" },
-            { busCoId: "KMB", route: "A38", direction: "荃景圍天橋", stopName: "機場", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/7CB61EFB024D9025/A38/1", specialDir: "I" },
+            { busCoId: "KMB", route: "A38", direction: "荃威", stopName: "機場", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/7CB61EFB024D9025/A38/1", specialDir: "I" },
             { busCoId: "KMB", route: "68A", direction: "青衣站", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/ED364A58F885DC92/68A/1" },
             { busCoId: "KMB", route: "58M", direction: "屯門", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/12E6D91298FABAEE/58M/1" },
             { busCoId: "KMB", route: "67M", direction: "屯門", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/12E6D91298FABAEE/67M/1" },
             { busCoId: "KMB", route: "58M", direction: "葵芳", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/10860B611840CF22/58M/1" },
             { busCoId: "KMB", route: "67M", direction: "葵芳", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/10860B611840CF22/67M/1" },
-            { busCoId: "KMB", route: "A38", direction: "荃灣", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/B7F443B0BB14A4EC/A38/1" },
+            { busCoId: "KMB", route: "A38", direction: "荃威", stopName: "荃景圍天橋", targetSrc: "https://data.etabus.gov.hk/v1/transport/kmb/eta/B7F443B0BB14A4EC/A38/1" },
             { busCoId: "MTR", route: "AEL", direction: "香港", stopName: "機場", targetSrc: "https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=AEL&sta=AIR", mtrDir: "DOWN" },
             { busCoId: "MTR", route: "AEL", direction: "機場", stopName: "青衣", targetSrc: "https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line=AEL&sta=TSY", mtrDir: "UP" }
         ];
